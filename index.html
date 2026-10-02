@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>グループチャレンジ</title>
+<style>
+  :root{
+    --bg:#faf8f4;
+    --card:#ffffff;
+    --text:#2b2f2b;
+    --muted:#6b7268;
+    --accent:#4f7d66;
+    --accent-weak:#e4efe9;
+    --border:#e6e2d8;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1b1d1a;
+      --card:#24271f;
+      --text:#eef0ea;
+      --muted:#9aa296;
+      --accent:#7fb89c;
+      --accent-weak:#2c3730;
+      --border:#343a30;
+      color-scheme: dark;
+    }
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+    min-height:100vh;
+  }
+  .wrap{ max-width:420px; margin:0 auto; }
+  h1{ font-size:1.1rem; font-weight:600; margin:0 0 20px; text-align:center; letter-spacing:.02em; }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:24px 20px;
+    margin-bottom:16px;
+  }
+  label{ display:block; font-size:.85rem; color:var(--muted); margin-bottom:6px; }
+  input[type=text], input[type=password], textarea{
+    width:100%;
+    font-size:1rem;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--bg);
+    color:var(--text);
+    font-family:inherit;
+  }
+  textarea{ resize:vertical; min-height:70px; }
+  button{
+    width:100%;
+    font-size:1rem;
+    font-weight:600;
+    padding:14px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-primary{ background:var(--accent); color:#fff; margin-top:12px; }
+  .btn-primary:disabled{ background:var(--accent-weak); color:var(--muted); cursor:default; }
+  .btn-primary:active:not(:disabled){ opacity:.85; }
+  .goal-label{ font-size:.8rem; color:var(--muted); margin-bottom:4px; }
+  .goal-text{ font-size:1.15rem; font-weight:600; line-height:1.5; }
+  .my-count{ text-align:center; margin-top:18px; font-size:.9rem; color:var(--muted); }
+  .my-count strong{ font-size:1.6rem; color:var(--text); display:block; margin-top:2px; }
+  .section-title{ font-size:.8rem; color:var(--muted); margin:0 0 10px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    min-width:40px; height:40px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg); border:1px solid var(--border);
+    border-radius:10px; font-size:.9rem; color:var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.me{ background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+  .hint{ font-size:.78rem; color:var(--muted); margin-top:10px; line-height:1.5; }
+  .error{ color:#c0514a; font-size:.85rem; margin-top:8px; min-height:1em; }
+  .admin-link{
+    display:block; text-align:center; margin-top:4px;
+    font-size:.78rem; color:var(--muted); background:none; border:none;
+    text-decoration:underline; padding:10px;
+  }
+  [hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>グループチャレンジ</h1>
+
+  <div id="screen-join" hidden>
+    <div class="card">
+      <form id="join-form">
+        <label for="nickname-input">ニックネームを入力してください</label>
+        <input id="nickname-input" type="text" maxlength="20" autocomplete="off" placeholder="例: もも">
+        <button class="btn-primary" type="submit">はじめる</button>
+        <div class="error" id="join-error"></div>
+      </form>
+      <div class="hint">次に開くときも同じニックネームを入れると、続きから記録できます。</div>
+    </div>
+  </div>
+
+  <div id="screen-main" hidden>
+    <div class="card">
+      <div class="goal-label">今の目標</div>
+      <div class="goal-text" id="goal-text">読み込み中…</div>
+      <button class="btn-primary" id="checkin-btn" disabled>読み込み中…</button>
+      <div class="my-count">あなたの合計<strong id="my-count">-</strong></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">みんなの様子（だれの記録かは分かりません）</div>
+      <div class="chips" id="progress-list"></div>
+    </div>
+
+    <button class="admin-link" id="admin-toggle" type="button">管理者はこちら</button>
+
+    <div class="card" id="admin-panel" hidden>
+      <form id="admin-form">
+        <label for="admin-password">パスワード</label>
+        <input id="admin-password" type="password" autocomplete="off">
+        <label for="admin-goal" style="margin-top:14px;">新しい目標</label>
+        <textarea id="admin-goal" maxlength="200"></textarea>
+        <button class="btn-primary" type="submit">この内容で始める</button>
+        <div class="hint">切り替えると、全員の回数は0からになります（昔の記録は消えません）。</div>
+        <div class="error" id="admin-msg"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = "PUT_APPS_SCRIPT_URL_HERE";
+const $ = (id) => document.getElementById(id);
+
+function hashId(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+function getSavedNickname() {
+  try { return localStorage.getItem('gc_nickname') || ''; } catch (e) { return ''; }
+}
+function saveNickname(n) {
+  try { localStorage.setItem('gc_nickname', n); } catch (e) {}
+}
+
+let myNickname = '';
+let myId = '';
+
+async function apiGet(params) {
+  const qs = new URLSearchParams(params);
+  qs.set('_', Date.now());
+  const res = await fetch(API_URL + '?' + qs.toString());
+  return res.json();
+}
+async function apiPost(params) {
+  const body = new URLSearchParams(params).toString();
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body
+  });
+  return res.json();
+}
+
+function showScreen(name) {
+  $('screen-join').hidden = name !== 'join';
+  $('screen-main').hidden = name !== 'main';
+}
+
+function updateButtonState(already) {
+  const btn = $('checkin-btn');
+  btn.disabled = !!already;
+  btn.textContent = already ? '今日は記録済み' : 'できた！';
+}
+
+async function refreshList() {
+  const r = await apiGet({ action: 'state' });
+  if (!r.ok) return;
+  $('goal-text').textContent = r.goalText || '（まだ目標が決まっていません）';
+  const list = r.participants.map(p => ({ id: p.id, count: p.count }));
+  list.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const wrap = $('progress-list');
+  wrap.innerHTML = '';
+  list.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'chip' + (p.id === myId ? ' me' : '');
+    el.textContent = p.count;
+    wrap.appendChild(el);
+  });
+}
+
+async function boot() {
+  const saved = getSavedNickname();
+  if (saved) {
+    const r = await apiGet({ action: 'join', nickname: saved });
+    if (r.ok) {
+      myNickname = saved;
+      myId = hashId(saved);
+      showScreen('main');
+      $('goal-text').textContent = r.goalText || '（まだ目標が決まっていません）';
+      $('my-count').textContent = r.count;
+      updateButtonState(r.already);
+      refreshList();
+      return;
+    }
+  }
+  showScreen('join');
+}
+
+$('join-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('nickname-input').value.trim();
+  if (!name) return;
+  $('join-error').textContent = '';
+  const r = await apiGet({ action: 'join', nickname: name });
+  if (!r.ok) {
+    $('join-error').textContent = 'うまく参加できませんでした。もう一度お試しください。';
+    return;
+  }
+  myNickname = name;
+  myId = hashId(name);
+  saveNickname(name);
+  showScreen('main');
+  $('goal-text').textContent = r.goalText || '（まだ目標が決まっていません）';
+  $('my-count').textContent = r.count;
+  updateButtonState(r.already);
+  refreshList();
+});
+
+$('checkin-btn').addEventListener('click', async () => {
+  $('checkin-btn').disabled = true;
+  const r = await apiGet({ action: 'checkin', nickname: myNickname });
+  if (r.ok) {
+    $('my-count').textContent = r.count;
+    updateButtonState(true);
+    refreshList();
+  } else {
+    $('checkin-btn').disabled = false;
+  }
+});
+
+$('admin-toggle').addEventListener('click', async () => {
+  const panel = $('admin-panel');
+  panel.hidden = !panel.hidden;
+  if (!panel.hidden) {
+    const r = await apiGet({ action: 'state' });
+    if (r.ok) $('admin-goal').value = r.goalText || '';
+  }
+});
+
+$('admin-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const password = $('admin-password').value;
+  const text = $('admin-goal').value.trim();
+  if (!text) return;
+  const sure = confirm('この内容で新しい目標を始めますか？\n全員の回数は0からになります（昔の記録は消えません）。');
+  if (!sure) return;
+  $('admin-msg').textContent = '送信中…';
+  const r = await apiPost({ action: 'setGoal', password, text });
+  if (r.ok) {
+    $('admin-msg').textContent = '目標を更新しました。';
+    $('admin-password').value = '';
+    $('goal-text').textContent = r.goalText;
+    refreshList();
+  } else {
+    $('admin-msg').textContent = 'パスワードが違うか、エラーが発生しました。';
+  }
+});
+
+boot();
+</script>
+</body>
+</html>
