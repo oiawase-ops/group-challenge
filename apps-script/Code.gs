@@ -102,6 +102,13 @@ function todayStr() {
   return Utilities.formatDate(new Date(), TIMEZONE, 'yyyy-MM-dd');
 }
 
+/** スプレッドシートが日付らしき文字列を自動でDate型に変換してしまうことがあるため、
+ * 読み取り時はDateでも文字列でも同じ形式(yyyy-MM-dd)に揃えてから比較する */
+function toDateStr(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TIMEZONE, 'yyyy-MM-dd');
+  return String(v || '');
+}
+
 function ss() {
   return SpreadsheetApp.getActiveSpreadsheet();
 }
@@ -195,7 +202,7 @@ function join(nicknameRaw) {
       ok: true,
       nickname: nickname,
       count: Number(rows[idx][2]) || 0,
-      already: rows[idx][3] === today,
+      already: toDateStr(rows[idx][3]) === today,
       goalText: config.goalText,
       periodId: config.periodId,
     };
@@ -223,7 +230,7 @@ function checkin(nicknameRaw) {
       return { ok: true, count: 1, already: false };
     }
 
-    if (rows[idx][3] === today) {
+    if (toDateStr(rows[idx][3]) === today) {
       return { ok: true, count: Number(rows[idx][2]) || 0, already: true };
     }
 

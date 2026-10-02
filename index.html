@@ -207,8 +207,9 @@ async function boot() {
   if (saved) {
     const r = await apiGet({ action: 'join', nickname: saved });
     if (r.ok) {
-      myNickname = saved;
-      myId = hashId(saved);
+      myNickname = r.nickname;
+      myId = hashId(r.nickname);
+      saveNickname(r.nickname);
       showScreen('main');
       $('goal-text').textContent = r.goalText || '（まだ目標が決まっていません）';
       $('my-count').textContent = r.count;
@@ -230,9 +231,9 @@ $('join-form').addEventListener('submit', async (e) => {
     $('join-error').textContent = 'うまく参加できませんでした。もう一度お試しください。';
     return;
   }
-  myNickname = name;
-  myId = hashId(name);
-  saveNickname(name);
+  myNickname = r.nickname;
+  myId = hashId(r.nickname);
+  saveNickname(r.nickname);
   showScreen('main');
   $('goal-text').textContent = r.goalText || '（まだ目標が決まっていません）';
   $('my-count').textContent = r.count;
